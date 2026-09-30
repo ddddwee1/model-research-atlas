@@ -65,8 +65,7 @@
               "publisher",
               "description",
               "path",
-              "updated",
-              "repositoryCount"
+              "updated"
             ],
             "properties": {
               "id": {
@@ -90,8 +89,38 @@
               "repositoryCount": {
                 "type": "integer",
                 "minimum": 1
+              },
+              "kind": {
+                "type": "string",
+                "description": "主页卡片类别标签，默认“组织研究”"
+              },
+              "topics": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "主页卡片主题标签"
+              },
+              "counts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "主页卡片底部口径说明；提供时可省略 repositoryCount"
               }
-            }
+            },
+            "anyOf": [
+              {
+                "required": [
+                  "repositoryCount"
+                ]
+              },
+              {
+                "required": [
+                  "counts"
+                ]
+              }
+            ]
           }
         }
       }
