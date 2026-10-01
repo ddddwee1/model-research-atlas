@@ -15,6 +15,7 @@
     "reports/openbmb/01-深度分析.md",
     "reports/openbmb/02-全部仓库附录.md",
     "reports/openbmb/README.md",
-    "reports/openbmb/compute/字段与来源说明.md"
+    "reports/openbmb/compute/字段与来源说明.md",
+    "supernode/report.md"
   ]
 }
