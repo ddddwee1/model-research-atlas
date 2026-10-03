@@ -52,7 +52,7 @@ precision=[
  ('MXFP4','Blackwell对应服务内核；CDNA4/5；950条件','E2M1 block32 + E8M0 scale；W4A16/W4A8要另核实','0.5+1/32=0.53125 B/量化参数；按每张量padding；K3只量化特定专家','原K3检查点格式；不能当作Ascend910C INT4 W4A8直接兼容，需转换配方','k3-config;amd-cdna;asc-amct;asc-k3'),
  ('NVFP4','Blackwell DC TE完整recipe；Rubin规格；其他平台不默认二进制兼容','E2M1 block16 + E4M3局部scale + FP32全局scale','0.5+1/16 B/参数 + 4 B/张量（双scale/转置另计）','存在4bit矩阵训练recipe，仍是混合精度；不是所有optimizer/grad/master均4bit，K3收敛未验证','nv-fp4;nv-te;nv-rubin'),
  ('INT4','按INT4解包/反量化/GEMM后端；不以FP4能力替代','W4A16冻结低位权重/高精度激活；W4A8再量化激活','0.5 B + scale/zero/packing；本情景group128、BF16 scale与2B zero仅是假设','910C K3使用转换W4A8已有服务教程；不能推出完整训练支持','asc-quant;asc-k3'),
- ('NF4 / QLoRA','具体框架与设备kernel另验','4bit冻结底座，adapter BF16，计算反量化','0.5 B + codebook/scales/double-quant metadata；不是MXFP4','本计算器QLoRA用保守分组4bit存储代理，非宣称K3 NF4已转换或可训练','qlora;lora'),
+ ('NF4 / QLoRA','具体框架与设备kernel另验','4bit冻结底座，adapter BF16，计算反量化','0.5 B + codebook/scales/double-quant metadata；不是MXFP4','本计算器将0.5B/值+2B/group64 scale作为预算假设；codebook、实际scale dtype及double-quant元数据不完整，不等于完整QLoRA格式','qlora;lora'),
  ('KV / KDA','与权重精度独立','KV BF16/FP8/INT8按engine；KDA矩阵状态通常更高精度','KV scale/page padding另列；KDA FP32默认假设','W4不代表KV4；训练不分配推理历史cache；GQA不可套K3混合缓存','k3-impl;vllm-k3-mla;asc-k3'),
 ]
 precision=[dict(format=a,hardware=b,arithmetic=c,storage=d,limit=e,refs=f) for a,b,c,d,e,f in precision]
@@ -94,10 +94,10 @@ def build():
  d=json.loads((ROOT/'data/families/kimi/k3-layers.json').read_text())
  route=sum(g.get('routed_parameters',0) for g in d['groups'])
  active=sum(g.get('active_linear_parameters',0) for g in d['groups'] if g['group'] in ['decoder','output_head'])
- k3=dict(id='kimi-kimi-k3',name='Kimi-K3',kind='固定文件头/配置 + 运行假设',total=d['logical_parameters'],routed=route,active=active,layers=93,referenceLayers=93,mlaLayerIndices=[*range(4,93,4),93],moeLayers=92,experts=896,topK=16,hidden=7168,dispatchWidth=3584,expertIntermediate=3072,mlaLayers=24,kdaLayers=69,heads=96,headDim=128,kvWidth=30720,latentKvWidth=576,cacheLayout='hf-expanded',cacheBasis='HF固定参考代码 past_key_values.update 前已扩展K/V：96 heads × (128 NoPE key + 64 unrotated key + 128 value)=30,720 elements/layer/token',latentCacheBasis='vLLM NVIDIA K3 MLA固定源码吸收kv_b_proj；cache latent=512+64=576 elements/layer/token；仅该backend路径',convWidth=4,checkpointBytes=d['payload_bytes'],source='k3-config;k3-audit;k3-impl;vllm-k3-mla',cacheStatus='HF参考源码张量形状已核；运行时allocator/page字节未实测')
+ k3=dict(id='kimi-kimi-k3',name='Kimi-K3',kind='固定文件头/配置 + 运行假设',total=d['logical_parameters'],routed=route,active=active,layers=93,referenceLayers=93,mlaLayerIndices=[*range(4,93,4),93],moeLayers=92,experts=896,topK=16,hidden=7168,dispatchWidth=3584,expertIntermediate=3072,mlaLayers=24,kdaLayers=69,heads=96,headDim=128,kvWidth=30720,latentKvWidth=576,cacheLayout='hf-expanded',cacheBasis='HF固定参考代码 past_key_values.update 前已扩展K/V：96 heads × (128 NoPE key + 64额外投影维度 + 128 value)=30,720 elements/layer/token；不表示64维key已旋转',latentCacheBasis='vLLM NVIDIA K3 MLA固定源码吸收kv_b_proj；cache latent=512+64=576 elements/layer/token；K3 NoPE路径不表示64维key已旋转；仅该backend路径',convWidth=4,checkpointBytes=d['payload_bytes'],source='k3-config;k3-audit;k3-impl;vllm-k3-mla',baseEvidence='k3-config;k3-impl;vllm-k3-mla',userModified=False,cacheStatus='仅未修改HF参考投影形状有来源；运行时allocator/page布局未实测，用户编辑后来源不再验证自定义情景')
  models=[k3]
  for scale,total,activep in [('5t',5e12,2e11),('10t',1e13,4e11)]:
-  models.append(dict(k3,id='scenario-'+scale,name=scale.upper()+' 参数化情景（非已发布模型）',kind='纯压力情景：结构/缓存布局沿用K3假设且均可修改，不代表可实现的具体网络',total=total,routed=total*.98,active=activep,checkpointBytes=None,cacheLayout='assumed-hf-expanded',cacheStatus='假设K3缓存几何；非已发布或运行实测模型',source='用户可配置情景，无模型发布来源'))
+  models.append(dict(k3,id='scenario-'+scale,name=scale.upper()+' 参数化情景（非已发布模型）',kind='纯压力情景：结构/缓存布局沿用K3假设且均可修改，不代表可实现的具体网络',total=total,routed=total*.98,active=activep,checkpointBytes=None,cacheLayout='assumed-hf-expanded',baseEvidence=None,userModified=False,cacheBasis='沿用K3的假设缓存几何；不是模型来源或运行验证',latentCacheBasis='沿用K3的假设latent几何；不是模型来源或运行验证',cacheStatus='假设K3缓存几何；非已发布或运行实测模型',source='用户可配置情景，无模型发布来源'))
  manifest=json.loads((ROOT/'dist/downloads/model-documents/manifest.json').read_text())
  coverage=[]
  for m in manifest['models']:

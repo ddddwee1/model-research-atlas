@@ -7,5 +7,5 @@ INT8,三平台具体GEMM/量化后端条件,W8A8或W8A16，独立选择,1 B + pe
 MXFP4,Blackwell对应服务内核；CDNA4/5；950条件,E2M1 block32 + E8M0 scale；W4A16/W4A8要另核实,0.5+1/32=0.53125 B/量化参数；按每张量padding；K3只量化特定专家,原K3检查点格式；不能当作Ascend910C INT4 W4A8直接兼容，需转换配方,k3-config;amd-cdna;asc-amct;asc-k3
 NVFP4,Blackwell DC TE完整recipe；Rubin规格；其他平台不默认二进制兼容,E2M1 block16 + E4M3局部scale + FP32全局scale,0.5+1/16 B/参数 + 4 B/张量（双scale/转置另计）,存在4bit矩阵训练recipe，仍是混合精度；不是所有optimizer/grad/master均4bit，K3收敛未验证,nv-fp4;nv-te;nv-rubin
 INT4,按INT4解包/反量化/GEMM后端；不以FP4能力替代,W4A16冻结低位权重/高精度激活；W4A8再量化激活,0.5 B + scale/zero/packing；本情景group128、BF16 scale与2B zero仅是假设,910C K3使用转换W4A8已有服务教程；不能推出完整训练支持,asc-quant;asc-k3
-NF4 / QLoRA,具体框架与设备kernel另验,4bit冻结底座，adapter BF16，计算反量化,0.5 B + codebook/scales/double-quant metadata；不是MXFP4,本计算器QLoRA用保守分组4bit存储代理，非宣称K3 NF4已转换或可训练,qlora;lora
+NF4 / QLoRA,具体框架与设备kernel另验,4bit冻结底座，adapter BF16，计算反量化,0.5 B + codebook/scales/double-quant metadata；不是MXFP4,本计算器将0.5B/值+2B/group64 scale作为预算假设；codebook、实际scale dtype及double-quant元数据不完整，不等于完整QLoRA格式,qlora;lora
 KV / KDA,与权重精度独立,KV BF16/FP8/INT8按engine；KDA矩阵状态通常更高精度,KV scale/page padding另列；KDA FP32默认假设,W4不代表KV4；训练不分配推理历史cache；GQA不可套K3混合缓存,k3-impl;vllm-k3-mla;asc-k3

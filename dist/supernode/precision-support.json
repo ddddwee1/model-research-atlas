@@ -68,7 +68,7 @@
     "hardware": "具体框架与设备kernel另验",
     "arithmetic": "4bit冻结底座，adapter BF16，计算反量化",
     "storage": "0.5 B + codebook/scales/double-quant metadata；不是MXFP4",
-    "limit": "本计算器QLoRA用保守分组4bit存储代理，非宣称K3 NF4已转换或可训练",
+    "limit": "本计算器将0.5B/值+2B/group64 scale作为预算假设；codebook、实际scale dtype及double-quant元数据不完整，不等于完整QLoRA格式",
     "refs": "qlora;lora"
   },
   {
