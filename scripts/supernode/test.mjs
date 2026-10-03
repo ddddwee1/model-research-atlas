@@ -17,6 +17,7 @@ let s=calc({phase:'fullft',tp:8,dp:64,ep:64,etp:1,sp:8,zero:3,imbalance:1,format
 close(r.totalGiB,s.totalGiB); // Low-bit selector does NOT erase full-training states.
 for(const key of ['tp','pp','dp','ep','etp','domain','cacheShards'])assert.ok(calc({[key]:0}).errors.length,key);
 assert.ok(calc({tp:5}).errors.length);assert.ok(calc({tp:8,dp:8,ep:128}).errors.length);assert.ok(calc({phase:'qlora',format:'FP8'}).errors.length);
+assert.ok(calc({}, {...m,latentKvWidth:0.5}).errors.some(e=>e.includes('缓存布局宽度')));
 assert.ok(calc({reserve:1}).errors.length);assert.ok(calc({intraEff:0}).errors.length);assert.ok(calc({}, {...m,kdaLayers:null}).errors.length);assert.ok(calc({etp:7,dp:56}).errors.some(e=>e.includes('专家中间维度')));
 assert.ok(calc({hbmGiB:null}).errors.length);assert.equal(calc({interGBps:null,epCross:.5}).modeledFloor,null);
 for(const key of ['tflops','hbmGBps','intraGBps','interGBps'])for(const value of [Infinity,-Infinity,NaN,-1])assert.ok(calc({[key]:value}).errors.length,`${key}=${value}`);

@@ -34,7 +34,7 @@ export function calculate(m,x){
  for(const key of ['layers','hidden','experts','topK','dispatchWidth','expertIntermediate','heads','headDim','kvWidth','convWidth'])if(!Number.isInteger(m[key])||m[key]<1)errors.push('模型 '+key+' 须为正整数');
  for(const key of ['moeLayers','mlaLayers','kdaLayers'])if(!Number.isInteger(m[key])||m[key]<0||m[key]>m.layers)errors.push('模型 '+key+' 层数不合法');
  if(m.topK>m.experts||m.mlaLayers+m.kdaLayers>m.layers)errors.push('topK或缓存层数超过模型范围');
- if(m.kvWidth<=0||m.latentKvWidth<=0)errors.push('模型缓存布局宽度须为正数');
+ if(m.kvWidth<=0||!Number.isInteger(m.latentKvWidth)||m.latentKvWidth<=0)errors.push('模型缓存布局宽度须为正整数');
  const n=x.tp*x.pp*x.dp,edp=x.tp*x.dp/(x.etp*x.ep);
  if(!Number.isInteger(edp)||edp<1)errors.push('TP×DP 必须能被 ETP×EP 整除（专家数据复制组）');
  if(m.experts%x.ep)errors.push('专家数须能被EP整除（此预算不支持专家padding分配）');
@@ -45,7 +45,7 @@ export function calculate(m,x){
  if(x.cacheShards>x.tp||x.tp%x.cacheShards)errors.push('cache分片须为TP的约数，且需要后端依据');
  if(x.phase==='qlora'&&formats[x.format].bits!==4)errors.push('QLoRA/低位PEFT必须选择4bit冻结底座存储情景');
  if(x.phase==='lora'&&x.format!=='BF16')errors.push('本LoRA基线冻结BF16底座；低位底座请选QLoRA/低位PEFT');
- if(m.layers%x.pp)warnings.push('层数不可均分PP，激活/cache使用ceil(L/PP)比例；权重另乘不均衡系数，仍需实际最重stage分层核验');
+ if(m.layers%x.pp)warnings.push('层数不可均分PP；激活使用ceil(L/PP)比例，缓存按逐stage层数计并取对应分支峰值；权重另乘不均衡系数，仍需实际最重stage分层核验');
  if(x.ep>1&&x.tp>1&&x.sp===1)warnings.push('训练TP+EP通常需SP；当前为容量假设，Megatron等后端要求SP时本配置不可直接启动');
  if(errors.length)return {errors,warnings};
  const full=['pretrain','continue','fullft'].includes(x.phase),peft=['lora','qlora'].includes(x.phase),training=full||peft;
