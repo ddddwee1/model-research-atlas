@@ -13,7 +13,8 @@ reports=catalog.get('reports',[])
 assert len({r['id'] for r in reports})==len(reports)
 assert not ({r['id'] for r in reports}&{f['id'] for f in catalog['families']})
 for report in reports:
- assert report['name'] and report['description'] and report['repositoryCount']>0
+ assert report['name'] and report['description'] and (report.get('counts') or report['repositoryCount']>0)
+ for k in ('topics','counts'):assert all(isinstance(t,str) and t for t in report.get(k,[])),(report['id'],k)
  path=Path(report['path']);assert not path.is_absolute() and '..' not in path.parts
  assert (ROOT/'dist'/path/'index.html').is_file(),report['path']
 checks=0
