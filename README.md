@@ -17,6 +17,10 @@ GLM-5.3-Flash 是 45 层混合注意力模型：34 层 KDA 线性注意力 + 11 
 
 按配置默认值推导的参数总数为 313,326,811,966，与配方 README 自述的约 306B 相差约一层 MoE；若前 4 层为 Dense 则为 306,203,703,838，与自述一致。该差异在结构页与来源页明确保留，未替厂商选定其一。
 
+## K3 定制训练、推理与 Runtime 调度
+
+新增 [SGLang、vLLM、TorchTitan 对比与 K3 Runtime 方案](dist/assets/kimi/K3-SGLang-vLLM-TorchTitan与定制runtime方案.md)：围绕 KDA/MLA 混合状态、Latent MoE 专家通信和视觉路径，比较推理/训练扩展点，提出共享 K3 模型契约、上游 engine adapter、两级调度和分阶段验收。结论是复用 SGLang 或 vLLM 做推理、TorchTitan 做训练基线；不把源码支持误写为硬件实测或收敛验证。
+
 ## OpenBMB 主模型与技术演进
 
 研究日期：2026-09-23。覆盖 88 个公开仓库，按主模型家族优先阅读，包含模型来源与团队贡献、昇腾 Ascend NPU 的算子和编译优化分析。
